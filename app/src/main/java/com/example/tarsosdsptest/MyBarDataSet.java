@@ -9,6 +9,7 @@ public class MyBarDataSet extends BarDataSet {
 
     public MyBarDataSet(List<BarEntry> yVals, String label) {
         super(yVals, label);
+
     }
 
     @Override
