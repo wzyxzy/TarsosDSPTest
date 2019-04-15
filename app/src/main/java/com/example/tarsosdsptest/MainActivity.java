@@ -7,6 +7,7 @@ import android.os.Message;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.Switch;
@@ -23,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import be.tarsos.dsp.AudioDispatcher;
 import be.tarsos.dsp.AudioEvent;
@@ -45,6 +48,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean isBegin;
     private boolean isMusicMode;
     private long dateTime;
+    private Timer timer;
+    private TimerTask timerTask;
+
 
     private Handler handler = new Handler() {
         @Override
@@ -52,11 +58,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             super.handleMessage(msg);
             switch (msg.what) {
                 case 0:
-                    ChartUtil.showChart(MainActivity.this, lineChart, xDataList, yDataList, "频率图", "频率/时间", "hz/s");
+                    ChartUtil.showChart(MainActivity.this, lineChart, xDataList, yDataList, "频率图", "频率/时间", "Hz", isMusicMode);
                     break;
                 case 1:
-                    lineChart.notifyDataSetChanged();
-                    lineChart.invalidate();
+                    timer = new Timer();
+                    timerTask = new TimerTask() {
+                        @Override
+                        public void run() {
+                            lineChart.notifyDataSetChanged();
+                            lineChart.invalidate();
+                        }
+                    };
+                    timer.schedule(timerTask,500,500);
+
                     break;
             }
         }
@@ -78,6 +92,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void initView() {
+
         lineChart = (LineChart) findViewById(R.id.lineChart);
         PermissionGetting.setPermissionListener(new PermissionListener() {
             @Override
@@ -104,8 +119,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 } else {
                     isMusicMode = false;
                 }
+                xDataList.clear();
+                yDataList.clear();
+                count = 0;
+                isBegin = false;
+                bigin.setText("开始测试");
+                lineChart.clear();
+                initData();
             }
         });
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);//软件在后台屏幕不需要常亮
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);//保持屏幕常亮
     }
 
     private void initData() {
@@ -122,37 +156,105 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         String format = df.format(new Date().getTime() - dateTime);
         xDataList.add(format);
         if (isMusicMode) {
-            YAxis yAxis = lineChart.getAxisLeft();
-            yAxis.setAxisMaxValue(8);
-            yAxis.setAxisMinValue(1);
-            if (pitchInHz > 240 && pitchInHz < 278)
-                yDataList.add(new Entry(1, ++count));
-            else if (pitchInHz > 278 && pitchInHz < 310)
-                yDataList.add(new Entry(2, ++count));
-            else if (pitchInHz > 310 && pitchInHz < 339)
-                yDataList.add(new Entry(3, ++count));
-            else if (pitchInHz > 339 && pitchInHz < 370)
-                yDataList.add(new Entry(4, ++count));
-            else if (pitchInHz > 370 && pitchInHz < 416)
-                yDataList.add(new Entry(5, ++count));
-            else if (pitchInHz > 416 && pitchInHz < 467)
-                yDataList.add(new Entry(6, ++count));
-            else if (pitchInHz > 467 && pitchInHz < 508)
-                yDataList.add(new Entry(7, ++count));
-            else if (pitchInHz > 508 && pitchInHz < 538)
-                yDataList.add(new Entry(8, ++count));
-            else if (pitchInHz < 240)
-                yDataList.add(new Entry(0, ++count));
-            else
-                yDataList.add(new Entry(0, ++count));
+//            yAxis.setDrawGridLines(true);
+            int value = 0;
+            if (pitchInHz < 85) {
+                value = 0;
+            } else if (pitchInHz < 90) {
+                value = 1;
+            } else if (pitchInHz < 95) {
+                value = 2;
+            } else if (pitchInHz < 100) {
+                value = 3;
+            } else if (pitchInHz < 106) {
+                value = 4;
+            } else if (pitchInHz < 113) {
+                value = 5;
+            } else if (pitchInHz < 120) {
+                value = 6;
+                ;
+            } else if (pitchInHz < 127) {
+                value = 7;
+            } else if (pitchInHz < 135) {
+                value = 8;
+            } else if (pitchInHz < 142) {
+                value = 9;
+            } else if (pitchInHz < 151) {
+                value = 10;
+            } else if (pitchInHz < 160) {
+                value = 11;
+            } else if (pitchInHz < 170) {
+                value = 12;
+            } else if (pitchInHz < 180) {
+                value = 13;
+            } else if (pitchInHz < 191) {
+                value = 14;
+            } else if (pitchInHz < 202) {
+                value = 15;
+            } else if (pitchInHz < 214) {
+                value = 16;
+            } else if (pitchInHz < 226) {
+                value = 17;
+            } else if (pitchInHz < 240) {
+                value = 18;
+            } else if (pitchInHz < 254) {
+                value = 19;
+            } else if (pitchInHz < 269) {
+                value = 20;
+            } else if (pitchInHz < 285) {
+                value = 21;
+            } else if (pitchInHz < 302) {
+                value = 22;
+            } else if (pitchInHz < 320) {
+                value = 23;
+            } else if (pitchInHz < 339) {
+                value = 24;
+            } else if (pitchInHz < 359) {
+                value = 25;
+            } else if (pitchInHz < 381) {
+                value = 26;
+            } else if (pitchInHz < 404) {
+                value = 27;
+            } else if (pitchInHz < 428) {
+                value = 28;
+            } else if (pitchInHz < 453) {
+                value = 29;
+            } else if (pitchInHz < 480) {
+                value = 30;
+            } else if (pitchInHz < 508) {
+                value = 31;
+            } else if (pitchInHz < 539) {
+                value = 32;
+            } else if (pitchInHz < 571) {
+                value = 33;
+            } else if (pitchInHz < 604) {
+                value = 34;
+            } else if (pitchInHz < 641) {
+                value = 35;
+            } else if (pitchInHz < 679) {
+                value = 36;
+            } else if (pitchInHz < 719) {
+                value = 37;
+            } else if (pitchInHz < 762) {
+                value = 38;
+            } else if (pitchInHz < 807) {
+                value = 39;
+            } else if (pitchInHz < 855) {
+                value = 40;
+            } else if (pitchInHz < 906) {
+                value = 41;
+            } else if (pitchInHz >= 906) {
+                value = 42;
+            } else {
+                value = 0;
+            }
+            yDataList.add(new Entry(value, ++count));
         } else {
-            YAxis yAxis = lineChart.getAxisLeft();
-            yAxis.setAxisMaxValue(600);
-            yAxis.setAxisMinValue(100);
+
             yDataList.add(new Entry(pitchInHz, ++count));
 
         }
-        handler.sendEmptyMessage(1);
+//        handler.sendEmptyMessage(1);
     }
 
     @Override
@@ -225,6 +327,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         dispatcher.addAudioProcessor(pitchProcessor);
         audioThread = new Thread(dispatcher, "Audio Thread");
         audioThread.start();
+        handler.sendEmptyMessage(1);
 
     }
 }

@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.AxisBase;
 import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.Legend.LegendForm;
 import com.github.mikephil.charting.components.MarkerView;
@@ -18,6 +19,7 @@ import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.github.mikephil.charting.formatter.YAxisValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 
 public class ChartUtil {
@@ -34,9 +36,8 @@ public class ChartUtil {
      */
     static int[] mColors = new int[]{Color.RED, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.MAGENTA, Color.RED, Color.YELLOW, Color.GREEN};
 
-
     public static void showChart(Context context, LineChart lineChart, List<String> xDataList,
-                                 List<Entry> yDataList, String title, String curveLable, String unitName) {
+                                 List<Entry> yDataList, String title, String curveLable, String unitName, boolean isMusicMode) {
         // 设置数据
         lineChart.setData(setLineData(context, xDataList, yDataList, curveLable));
         CustomMarkerView mv = new CustomMarkerView(context, R.layout.chart_marker_view, unitName);
@@ -86,7 +87,6 @@ public class ChartUtil {
         mLegend.setEnabled(true);
         // 隐藏右侧Y轴（只在左侧的Y轴显示刻度）
         lineChart.getAxisRight().setEnabled(false);
-
         XAxis xAxis = lineChart.getXAxis();
         // 显示X轴上的刻度值
         xAxis.setDrawLabels(true);
@@ -97,11 +97,168 @@ public class ChartUtil {
         // 设置不从X轴发出纵向直线
         xAxis.setDrawGridLines(false);
         YAxis yAxis = lineChart.getAxisLeft();
-        yAxis.setAxisMaxValue(600);
-        yAxis.setAxisMinValue(100);
+//        yAxis.setAxisMaxValue(900);
+//        yAxis.setAxisMinValue(80);
+        yAxis.setDrawGridLines(true);
+        if (isMusicMode) {
+            yAxis.setAxisMaxValue(33);
+            yAxis.setAxisMinValue(19);
+            yAxis.setStartAtZero(false);
+            yAxis.setLabelCount(14, false);
+            //y轴
+            yAxis.setValueFormatter(new YAxisValueFormatter() {
+                @Override
+                public String getFormattedValue(float value, YAxis yAxis) {
+
+                    String visibleNum = "";
+                    switch ((int) value) {
+                        case 0:
+                            visibleNum = "low";
+                            break;
+                        case 1:
+                            visibleNum = "2F";
+                            break;
+                        case 2:
+                            visibleNum = "2F#";
+                            break;
+                        case 3:
+                            visibleNum = "2G";
+                            break;
+                        case 4:
+                            visibleNum = "2G#";
+                            break;
+                        case 5:
+                            visibleNum = "2A";
+                            break;
+                        case 6:
+                            visibleNum = "2A#";
+                            break;
+                        case 7:
+                            visibleNum = "2B";
+                            break;
+                        case 8:
+                            visibleNum = "3C";
+                            break;
+                        case 9:
+                            visibleNum = "3C#";
+                            break;
+                        case 10:
+                            visibleNum = "3D";
+                            break;
+                        case 11:
+                            visibleNum = "3D#";
+                            break;
+                        case 12:
+                            visibleNum = "3E";
+                            break;
+                        case 13:
+                            visibleNum = "3F";
+                            break;
+                        case 14:
+                            visibleNum = "3F#";
+                            break;
+                        case 15:
+                            visibleNum = "3G";
+                            break;
+                        case 16:
+                            visibleNum = "3G#";
+                            break;
+                        case 17:
+                            visibleNum = "3A";
+                            break;
+                        case 18:
+                            visibleNum = "3A#";
+                            break;
+                        case 19:
+                            visibleNum = "3B";
+                            break;
+                        case 20:
+                            visibleNum = "4C";
+                            break;
+                        case 21:
+                            visibleNum = "4C#";
+                            break;
+                        case 22:
+                            visibleNum = "4D";
+                            break;
+                        case 23:
+                            visibleNum = "4D#";
+                            break;
+                        case 24:
+                            visibleNum = "4E";
+                            break;
+                        case 25:
+                            visibleNum = "4F";
+                            break;
+                        case 26:
+                            visibleNum = "4F#";
+                            break;
+                        case 27:
+                            visibleNum = "4G";
+                            break;
+                        case 28:
+                            visibleNum = "4G#";
+                            break;
+                        case 29:
+                            visibleNum = "4A";
+                            break;
+                        case 30:
+                            visibleNum = "4A#";
+                            break;
+                        case 31:
+                            visibleNum = "4B";
+                            break;
+                        case 32:
+                            visibleNum = "5C";
+                            break;
+                        case 33:
+                            visibleNum = "5C#";
+                            break;
+                        case 34:
+                            visibleNum = "5D";
+                            break;
+                        case 35:
+                            visibleNum = "5D#";
+                            break;
+                        case 36:
+                            visibleNum = "5E";
+                            break;
+                        case 37:
+                            visibleNum = "5F";
+                            break;
+                        case 38:
+                            visibleNum = "5F#";
+                            break;
+                        case 39:
+                            visibleNum = "5G";
+                            break;
+                        case 40:
+                            visibleNum = "5G#";
+                            break;
+                        case 41:
+                            visibleNum = "5A";
+                            break;
+                        case 42:
+                            visibleNum = "HIGH";
+                            break;
+                    }
+                    return visibleNum;
+                }
+            });
+        } else {
+            yAxis.setAxisMaxValue(900);
+            yAxis.setAxisMinValue(0);
+            yAxis.setValueFormatter(new YAxisValueFormatter() {
+                @Override
+                public String getFormattedValue(float value, YAxis yAxis) {
+                    return String.valueOf((int) value);
+                }
+            });
+            yAxis.setLabelCount(8, false);
+        }
         // 执行的动画,x轴（动画持续时间）
         lineChart.animateX(2500);
-        // lineChart.notifyDataSetChanged();
+        lineChart.notifyDataSetChanged();
     }
 
     /**
@@ -121,31 +278,12 @@ public class ChartUtil {
         // mLineDataSet.setFillAlpha(110);
         // mLineDataSet.setFillColor(Color.RED);
         lineDataSet.setCircleColors(mColors);
-        for (Entry entry : yDataList) {
-            float val = entry.getVal();
-            if (val > 240 && val < 278)
-                setColor(lineDataSet, 0);
-            else if (val > 278 && val < 310)
-                setColor(lineDataSet, 1);
-            else if (val > 310 && val < 339)
-                setColor(lineDataSet, 2);
-            else if (val > 339 && val < 370)
-                setColor(lineDataSet, 3);
-            else if (val > 370 && val < 416)
-                setColor(lineDataSet, 4);
-            else if (val > 416 && val < 467)
-                setColor(lineDataSet, 5);
-            else if (val > 467 && val < 508)
-                setColor(lineDataSet, 6);
-            else if (val > 508 && val < 538)
-                setColor(lineDataSet, 7);
-            else if (val < 240)
-                setColor(lineDataSet, 8);
-            else if (val > 538)
-                setColor(lineDataSet, 0);
-            else // greater or equal than 100 red
-                setColor(lineDataSet, 1);
-        }
+        // 显示颜色
+        lineDataSet.setColor(mColors[3]);
+        // 圆形的颜色
+        lineDataSet.setCircleColor(mColors[3]);
+        // 设置坐标点的颜色
+        lineDataSet.setFillColor(mColors[3]);
         // 用y轴的集合来设置参数
         // 不显示坐标点的数据
         lineDataSet.setDrawValues(false);
@@ -185,15 +323,6 @@ public class ChartUtil {
         // y轴的数据
         LineData lineData = new LineData(xDataList, lineDataSets);
         return lineData;
-    }
-
-    private static void setColor(LineDataSet lineDataSet, int i) {
-        // 显示颜色
-        lineDataSet.setColor(mColors[i]);
-        // 圆形的颜色
-        lineDataSet.setCircleColor(mColors[i]);
-        // 设置坐标点的颜色
-        lineDataSet.setFillColor(mColors[i]);
     }
 
 }
