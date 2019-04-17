@@ -35,11 +35,12 @@ public class ChartUtil {
      * @param unitName
      */
     static int[] mColors = new int[]{Color.RED, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.MAGENTA, Color.RED, Color.YELLOW, Color.GREEN};
+    private static LineDataSet standardLineDataSet;
 
     public static void showChart(Context context, LineChart lineChart, List<String> xDataList,
-                                 List<Entry> yDataList, String title, String curveLable, String unitName, boolean isMusicMode) {
+                                 List<Entry> yDataList, String title, String curveLable, String unitName, boolean isMusicMode, boolean isStandard) {
         // 设置数据
-        lineChart.setData(setLineData(context, xDataList, yDataList, curveLable));
+        lineChart.setData(setLineData(context, xDataList, yDataList, curveLable, isStandard));
         CustomMarkerView mv = new CustomMarkerView(context, R.layout.chart_marker_view, unitName);
         // set the marker to the chart
         lineChart.setMarkerView(mv);
@@ -270,7 +271,7 @@ public class ChartUtil {
      * @return LineData
      */
     private static LineData setLineData(Context context, List<String> xDataList, List<Entry> yDataList,
-                                        String curveLable) {
+                                        String curveLable, boolean isStandard) {
         // LineDataSet表示一条曲线数据对象
         ArrayList<LineDataSet> lineDataSets = new ArrayList<LineDataSet>();
         // y轴的数据集合
@@ -319,7 +320,19 @@ public class ChartUtil {
 //        lineDataSet.setCubicIntensity(0.2f);
         // 设置为曲线显示,false为折线
         lineDataSet.setDrawCubic(false);
+        if (standardLineDataSet != null) {
+            lineDataSets.add(standardLineDataSet);
+        }
         lineDataSets.add(lineDataSet);
+        if (isStandard) {
+            standardLineDataSet = lineDataSet;
+            // 显示颜色
+            standardLineDataSet.setColor(mColors[4]);
+            // 圆形的颜色
+            standardLineDataSet.setCircleColor(mColors[4]);
+            // 设置坐标点的颜色
+            standardLineDataSet.setFillColor(mColors[4]);
+        }
         // y轴的数据
         LineData lineData = new LineData(xDataList, lineDataSets);
         return lineData;

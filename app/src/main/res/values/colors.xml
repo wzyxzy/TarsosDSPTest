@@ -8,5 +8,5 @@
     <color name="bg_white">#FFFFFF</color>
     <color name="bg_blue">#58ACED</color>
     <color name="text_yellow">#FFC800</color>
-
+    <color name="transLucent">#60000000</color>
 </resources>

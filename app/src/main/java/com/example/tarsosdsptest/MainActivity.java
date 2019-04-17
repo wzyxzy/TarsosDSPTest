@@ -1,6 +1,8 @@
 package com.example.tarsosdsptest;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -14,9 +16,8 @@ import android.widget.Switch;
 import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.data.BarEntry;
 import com.github.mikephil.charting.data.Entry;
+import com.orhanobut.logger.Logger;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     List<String> xDataList = new ArrayList<>();// x轴数据源
     List<Entry> yDataList = new ArrayList<Entry>();// y轴数据数据源
+    List<Entry> yStandardDataList = new ArrayList<Entry>();// y轴数据数据源
     private int count;
     private boolean isBegin;
     private boolean isMusicMode;
@@ -52,24 +54,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private TimerTask timerTask;
 
 
+    @SuppressLint("HandlerLeak")
     private Handler handler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
             switch (msg.what) {
                 case 0:
-                    ChartUtil.showChart(MainActivity.this, lineChart, xDataList, yDataList, "频率图", "频率/时间", "Hz", isMusicMode);
+                    ChartUtil.showChart(MainActivity.this, lineChart, xDataList, yDataList, "频率图", "频率/时间", "Hz", isMusicMode, false);
                     break;
                 case 1:
                     timer = new Timer();
                     timerTask = new TimerTask() {
                         @Override
                         public void run() {
-                            lineChart.notifyDataSetChanged();
-                            lineChart.invalidate();
+                            if (isBegin) {
+                                lineChart.notifyDataSetChanged();
+                                lineChart.invalidate();
+                                Logger.d(count);
+                                Logger.d(yDataList.toArray());
+                            }
                         }
                     };
-                    timer.schedule(timerTask,500,500);
+                    timer.schedule(timerTask, 500, 500);
+
 
                     break;
             }
@@ -80,6 +88,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button bigin;
     private Button clear;
     private Switch switchButton;
+    private Button score;
+    private Button standard;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,6 +138,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 initData();
             }
         });
+        score = (Button) findViewById(R.id.score);
+        score.setOnClickListener(this);
+        standard = (Button) findViewById(R.id.standard);
+        standard.setOnClickListener(this);
     }
 
     @Override
@@ -298,6 +312,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 lineChart.clear();
                 initData();
                 break;
+            case R.id.score:
+
+                if (yStandardDataList == null || yStandardDataList.size() == 0) {
+                    Toast.makeText(this, "还没有上传标准唱，请先上传！", Toast.LENGTH_SHORT).show();
+                } else {
+                    ScoreUtils scoreUtils = new ScoreUtils(yDataList, yStandardDataList);
+                    float[] scoreTime = scoreUtils.scoreTime();
+                    float[] scoreFrequency = scoreUtils.scoreFrequency();
+                    final CommonDialog commonDialog = new CommonDialog(this);
+                    commonDialog.setTitle(" 得 分 情 况 : ");
+                    commonDialog.setMessage("节奏误差：" + scoreTime[0] + "，标准唱总帧数为：" + scoreTime[1] + "，您的总帧数为：" + scoreTime[2] + "，音准误差率为：" + scoreFrequency[0] + "，误差个数为：" + scoreFrequency[1]);
+                    commonDialog.setRightButtonClickListener(new CommonDialog.RightButtonClickListener() {
+                        @Override
+                        public void onRightButtonClick() {
+                            commonDialog.cancel();
+
+
+                        }
+                    });
+                    commonDialog.show();
+
+                }
+
+
+                break;
+            case R.id.standard:
+                showStyleDialog();
+                break;
         }
     }
 
@@ -317,8 +359,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        if (isBegin)
+                        if (isBegin) {
                             processPitch(pitchInHz);
+                        }
+
                     }
                 });
             }
@@ -329,5 +373,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         audioThread.start();
         handler.sendEmptyMessage(1);
 
+    }
+
+    private void showStyleDialog() {
+
+        final CommonDialog commonDialog = new CommonDialog(this);
+        commonDialog.setTitle("温 馨 提 示 :");
+        commonDialog.setMessage("您确定要上传标准唱吗？");
+        commonDialog.setRightButtonClickListener(new CommonDialog.RightButtonClickListener() {
+            @Override
+            public void onRightButtonClick() {
+//                ChartUtil.showChart(MainActivity.this, lineChart, xDataList, yDataList, "频率图", "频率/时间", "Hz", isMusicMode, true);
+                yStandardDataList = yDataList;
+                xDataList.clear();
+                yDataList.clear();
+                count = 0;
+                isBegin = false;
+                bigin.setText("开始测试");
+                lineChart.clear();
+                initData();
+                commonDialog.cancel();
+
+
+            }
+        });
+        commonDialog.show();
     }
 }
