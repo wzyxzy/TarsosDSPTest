@@ -71,8 +71,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             if (isBegin) {
                                 lineChart.notifyDataSetChanged();
                                 lineChart.invalidate();
-                                Logger.d(count);
-                                Logger.d(yDataList.toArray());
+//                                Logger.d(count);
+//                                Logger.d(yDataList.toArray());
                             }
                         }
                     };
@@ -317,20 +317,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (yStandardDataList == null || yStandardDataList.size() == 0) {
                     Toast.makeText(this, "还没有上传标准唱，请先上传！", Toast.LENGTH_SHORT).show();
                 } else {
-                    ScoreUtils scoreUtils = new ScoreUtils(yDataList, yStandardDataList);
+                    ScoreUtils scoreUtils = new ScoreUtils(yStandardDataList, yDataList);
+                    Logger.d(yStandardDataList.toArray());
+                    Logger.d(yDataList.toArray());
                     float[] scoreTime = scoreUtils.scoreTime();
                     float[] scoreFrequency = scoreUtils.scoreFrequency();
                     final CommonDialog commonDialog = new CommonDialog(this);
                     commonDialog.setTitle(" 得 分 情 况 : ");
                     commonDialog.setMessage("节奏误差：" + scoreTime[0] + "，标准唱总帧数为：" + scoreTime[1] + "，您的总帧数为：" + scoreTime[2] + "，音准误差率为：" + scoreFrequency[0] + "，误差个数为：" + scoreFrequency[1]);
-                    commonDialog.setRightButtonClickListener(new CommonDialog.RightButtonClickListener() {
-                        @Override
-                        public void onRightButtonClick() {
-                            commonDialog.cancel();
-
-
-                        }
-                    });
                     commonDialog.show();
 
                 }
@@ -384,7 +378,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onRightButtonClick() {
 //                ChartUtil.showChart(MainActivity.this, lineChart, xDataList, yDataList, "频率图", "频率/时间", "Hz", isMusicMode, true);
-                yStandardDataList = yDataList;
+                yStandardDataList.clear();
+                yStandardDataList.addAll(yDataList);
                 xDataList.clear();
                 yDataList.clear();
                 count = 0;
