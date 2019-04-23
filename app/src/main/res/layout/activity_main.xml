@@ -50,6 +50,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
+        android:checked="true"
         android:textOff="频率模式"
         android:textOn="音乐模式"
         app:layout_constraintLeft_toLeftOf="parent"

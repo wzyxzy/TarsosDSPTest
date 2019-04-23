@@ -17,8 +17,12 @@ import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.orhanobut.logger.Logger;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -51,7 +55,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean isMusicMode;
     private long dateTime;
     private Timer timer;
-    private TimerTask timerTask;
+    private ReschedulableTimerTask timerTask;
+    private int time_during = 0;
+    private int time_max = 1000;
+    private int time_min = 100;
 
 
     @SuppressLint("HandlerLeak")
@@ -65,10 +72,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     break;
                 case 1:
                     timer = new Timer();
-                    timerTask = new TimerTask() {
+                    timerTask = new ReschedulableTimerTask() {
                         @Override
                         public void run() {
                             if (isBegin) {
+                                time_during = (int) (time_min * Math.pow(2, count / 100 - 1));
+                                timerTask.setPeriod(time_during > time_max ? time_max : time_during);
                                 lineChart.notifyDataSetChanged();
                                 lineChart.invalidate();
 //                                Logger.d(count);
@@ -76,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             }
                         }
                     };
-                    timer.schedule(timerTask, 500, 500);
+                    timer.scheduleAtFixedRate(timerTask, time_min, time_min);
 
 
                     break;
@@ -97,7 +106,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         count = 0;
         isBegin = false;
-        isMusicMode = false;
+        isMusicMode = true;
         initView();
     }
 
@@ -119,6 +128,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         bigin.setOnClickListener(this);
         clear = (Button) findViewById(R.id.clear);
         clear.setOnClickListener(this);
+        score = (Button) findViewById(R.id.score);
+        score.setOnClickListener(this);
+        standard = (Button) findViewById(R.id.standard);
+        standard.setOnClickListener(this);
         switchButton = (Switch) findViewById(R.id.switchButton);
         switchButton.setOnClickListener(this);
         switchButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -126,8 +139,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     isMusicMode = true;
+                    score.setVisibility(View.VISIBLE);
+                    standard.setVisibility(View.VISIBLE);
                 } else {
                     isMusicMode = false;
+                    score.setVisibility(View.GONE);
+                    standard.setVisibility(View.GONE);
                 }
                 xDataList.clear();
                 yDataList.clear();
@@ -138,10 +155,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 initData();
             }
         });
-        score = (Button) findViewById(R.id.score);
-        score.setOnClickListener(this);
-        standard = (Button) findViewById(R.id.standard);
-        standard.setOnClickListener(this);
+
     }
 
     @Override
@@ -313,19 +327,56 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 initData();
                 break;
             case R.id.score:
+                String data = SPUtility.getSPString(MainActivity.this, "listStr");
+                Gson gson = new Gson();
+                Type listType = new TypeToken<List<Entry>>() {
+                }.getType();
+                yStandardDataList = gson.fromJson(data, listType);
 
                 if (yStandardDataList == null || yStandardDataList.size() == 0) {
                     Toast.makeText(this, "还没有上传标准唱，请先上传！", Toast.LENGTH_SHORT).show();
+//                    yStandardDataList.clear();
                 } else {
                     ScoreUtils scoreUtils = new ScoreUtils(yStandardDataList, yDataList);
                     Logger.d(yStandardDataList.toArray());
                     Logger.d(yDataList.toArray());
+                    yStandardDataList.clear();
                     float[] scoreTime = scoreUtils.scoreTime();
                     float[] scoreFrequency = scoreUtils.scoreFrequency();
+
+                    int genTimeScore = 0;
+                    int genzScore = (int) Math.sqrt(20 / scoreFrequency[0]);
+                    genzScore = genzScore > 10 ? 10 : genzScore;
+                    if (scoreTime[0] < 0.01)
+                        genTimeScore = 10;
+                    else if (scoreTime[0] < 0.05)
+                        genTimeScore = 9;
+                    else if (scoreTime[0] < 0.1)
+                        genTimeScore = 8;
+                    else if (scoreTime[0] < 0.4)
+                        genTimeScore = (int) (1 / scoreTime[0]);
+                    else
+                        genTimeScore = (int) ((1 / scoreTime[0]) * (1 / scoreTime[0]));
+
                     final CommonDialog commonDialog = new CommonDialog(this);
                     commonDialog.setTitle(" 得 分 情 况 : ");
-                    commonDialog.setMessage("节奏误差：" + scoreTime[0] + "，标准唱总帧数为：" + scoreTime[1] + "，您的总帧数为：" + scoreTime[2] + "，音准误差率为：" + scoreFrequency[0] + "，误差个数为：" + scoreFrequency[1]);
+                    commonDialog.setRightButtonClickListener(new CommonDialog.RightButtonClickListener() {
+                        @Override
+                        public void onRightButtonClick() {
+                            xDataList.clear();
+                            yDataList.clear();
+                            count = 0;
+                            isBegin = false;
+                            bigin.setText("开始测试");
+                            lineChart.clear();
+                            initData();
+                            commonDialog.cancel();
+                        }
+                    });
+//                    commonDialog.setLeftButtonClickListener();
+                    commonDialog.setMessage("系统评分：节奏" + genTimeScore + "分，音准" + genzScore + "分\n明细如下\n节奏误差：" + scoreTime[0] + "，标准唱总帧数为：" + scoreTime[1] + "，您的总帧数为：" + scoreTime[2] + "，音准误差率为：" + scoreFrequency[0] + "，误差个数为：" + scoreFrequency[1]);
                     commonDialog.show();
+
 
                 }
 
@@ -378,8 +429,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onRightButtonClick() {
 //                ChartUtil.showChart(MainActivity.this, lineChart, xDataList, yDataList, "频率图", "频率/时间", "Hz", isMusicMode, true);
-                yStandardDataList.clear();
+
+//                yStandardDataList.clear();
                 yStandardDataList.addAll(yDataList);
+                Gson gson = new Gson();
+                String data = gson.toJson(yStandardDataList);
+                SPUtility.putSPString(MainActivity.this, "listStr", data);
+                yStandardDataList.clear();
                 xDataList.clear();
                 yDataList.clear();
                 count = 0;
@@ -393,5 +449,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
         commonDialog.show();
+    }
+
+    public abstract class ReschedulableTimerTask extends TimerTask {
+        public void setPeriod(long period) {
+            //缩短周期，执行频率就提高
+            setDeclaredField(TimerTask.class, this, "period", period);
+        }
+
+        //通过反射修改字段的值
+        boolean setDeclaredField(Class<?> clazz, Object obj,
+                                 String name, Object value) {
+            try {
+                Field field = clazz.getDeclaredField(name);
+                field.setAccessible(true);
+                field.set(obj, value);
+                return true;
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                return false;
+            }
+        }
     }
 }
