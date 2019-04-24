@@ -26,21 +26,32 @@ public class ScoreUtils {
     public float[] scoreFrequency() {
 
         float score = 0;
+        float highGapCount = 0;
         if (countFrame(standardFrame) > countFrame(userFrame)) {
             for (int i = userFrame[0]; i < userFrame[1]; i++) {
-                float everyScore = Math.abs(yDataList.get(i).getVal() - yStandardDataList.get((i - userFrame[0]) * countFrame(standardFrame) / countFrame(userFrame) + standardFrame[0]).getVal());
-                score += everyScore > 7 ? 0 : everyScore;
+                try {
+                    float everyScore = Math.abs(yDataList.get(i).getVal() - yStandardDataList.get((i - userFrame[0]) * countFrame(standardFrame) / countFrame(userFrame) + standardFrame[0]).getVal());
+                    score += everyScore > 7 ? 0 : everyScore;
+                } catch (IndexOutOfBoundsException e) {
+                    e.printStackTrace();
+                }
+
                 Logger.d(score);
             }
         } else {
             for (int i = standardFrame[0]; i < standardFrame[1]; i++) {
-                float everyScore = Math.abs(yStandardDataList.get(i).getVal() - yDataList.get((i - standardFrame[0]) * countFrame(userFrame) / countFrame(standardFrame) + userFrame[0]).getVal());
-                score += everyScore > 7 ? 0 : everyScore;
+                try {
+                    float everyScore = Math.abs(yStandardDataList.get(i).getVal() - yDataList.get((i - standardFrame[0]) * countFrame(userFrame) / countFrame(standardFrame) + userFrame[0]).getVal());
+                    score += everyScore > 7 ? 0 : everyScore;
+                    highGapCount += everyScore > 7 ? 1 : 0;
+                } catch (IndexOutOfBoundsException e) {
+                    e.printStackTrace();
+                }
                 Logger.d(score);
 
             }
         }
-        return new float[]{score / countFrame(userFrame), score};
+        return new float[]{score / countFrame(userFrame), score, highGapCount};
     }
 
     private int[] recordFrame(List<Entry> dataList) {
