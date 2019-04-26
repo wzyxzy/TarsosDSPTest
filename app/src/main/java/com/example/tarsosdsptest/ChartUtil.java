@@ -258,7 +258,7 @@ public class ChartUtil {
             yAxis.setLabelCount(8, false);
         }
         // 执行的动画,x轴（动画持续时间）
-        lineChart.animateX(2500);
+//        lineChart.animateX(2500);
         lineChart.notifyDataSetChanged();
     }
 

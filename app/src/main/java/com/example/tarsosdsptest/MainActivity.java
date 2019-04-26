@@ -396,7 +396,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void startRecord() {
         AudioDispatcher dispatcher =
-                AudioDispatcherFactory.fromDefaultMicrophone(22050, 1024, 0);
+                AudioDispatcherFactory.fromDefaultMicrophone(11025, 1024, 0);
         PitchDetectionHandler pdh = new PitchDetectionHandler() {
             @Override
             public void handlePitch(PitchDetectionResult res, AudioEvent e) {
@@ -412,7 +412,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 });
             }
         };
-        AudioProcessor pitchProcessor = new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.FFT_YIN, 22050, 1024, pdh);
+        AudioProcessor pitchProcessor = new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.FFT_YIN, 11025, 1024, pdh);
         dispatcher.addAudioProcessor(pitchProcessor);
         audioThread = new Thread(dispatcher, "Audio Thread");
         audioThread.start();
