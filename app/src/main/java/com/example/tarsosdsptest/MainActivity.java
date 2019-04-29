@@ -2,7 +2,6 @@ package com.example.tarsosdsptest;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -13,6 +12,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.github.mikephil.charting.charts.LineChart;
@@ -64,10 +64,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @SuppressLint("HandlerLeak")
     private Handler handler = new Handler() {
         @Override
-        public void handleMessage(Message msg) {
+        public void handleMessage(final Message msg) {
             super.handleMessage(msg);
             switch (msg.what) {
                 case 0:
+                    if (!isMusicMode)
                     ChartUtil.showChart(MainActivity.this, lineChart, xDataList, yDataList, "频率图", "频率/时间", "Hz", isMusicMode, false);
                     break;
                 case 1:
@@ -76,17 +77,158 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         @Override
                         public void run() {
                             if (isBegin) {
-                                time_during = (int) (time_min * Math.pow(2, count / 100 - 1));
-                                timerTask.setPeriod(time_during > time_max ? time_max : time_during);
-                                lineChart.notifyDataSetChanged();
-                                lineChart.invalidate();
-//                                Logger.d(count);
-//                                Logger.d(yDataList.toArray());
+                                if (!isMusicMode){
+
+                                    time_during = (int) (time_min * Math.pow(2, count / 100 - 1));
+                                    timerTask.setPeriod(time_during > time_max ? time_max : time_during);
+                                    lineChart.notifyDataSetChanged();
+                                    lineChart.invalidate();
+//                                    Logger.d(count);
+//                                    Logger.d(yDataList.toArray());
+                                }
+
                             }
                         }
                     };
                     timer.scheduleAtFixedRate(timerTask, time_min, time_min);
 
+
+                    break;
+                case 2:
+                    String visibleNum = "";
+                    switch (msg.arg1) {
+                        case 0:
+                            visibleNum = "low";
+                            break;
+                        case 1:
+                            visibleNum = "2F";
+                            break;
+                        case 2:
+                            visibleNum = "2F#";
+                            break;
+                        case 3:
+                            visibleNum = "2G";
+                            break;
+                        case 4:
+                            visibleNum = "2G#";
+                            break;
+                        case 5:
+                            visibleNum = "2A";
+                            break;
+                        case 6:
+                            visibleNum = "2A#";
+                            break;
+                        case 7:
+                            visibleNum = "2B";
+                            break;
+                        case 8:
+                            visibleNum = "3C";
+                            break;
+                        case 9:
+                            visibleNum = "3C#";
+                            break;
+                        case 10:
+                            visibleNum = "3D";
+                            break;
+                        case 11:
+                            visibleNum = "3D#";
+                            break;
+                        case 12:
+                            visibleNum = "3E";
+                            break;
+                        case 13:
+                            visibleNum = "3F";
+                            break;
+                        case 14:
+                            visibleNum = "3F#";
+                            break;
+                        case 15:
+                            visibleNum = "3G";
+                            break;
+                        case 16:
+                            visibleNum = "3G#";
+                            break;
+                        case 17:
+                            visibleNum = "3A";
+                            break;
+                        case 18:
+                            visibleNum = "3A#";
+                            break;
+                        case 19:
+                            visibleNum = "3B";
+                            break;
+                        case 20:
+                            visibleNum = "4C";
+                            break;
+                        case 21:
+                            visibleNum = "4C#";
+                            break;
+                        case 22:
+                            visibleNum = "4D";
+                            break;
+                        case 23:
+                            visibleNum = "4D#";
+                            break;
+                        case 24:
+                            visibleNum = "4E";
+                            break;
+                        case 25:
+                            visibleNum = "4F";
+                            break;
+                        case 26:
+                            visibleNum = "4F#";
+                            break;
+                        case 27:
+                            visibleNum = "4G";
+                            break;
+                        case 28:
+                            visibleNum = "4G#";
+                            break;
+                        case 29:
+                            visibleNum = "4A";
+                            break;
+                        case 30:
+                            visibleNum = "4A#";
+                            break;
+                        case 31:
+                            visibleNum = "4B";
+                            break;
+                        case 32:
+                            visibleNum = "5C";
+                            break;
+                        case 33:
+                            visibleNum = "5C#";
+                            break;
+                        case 34:
+                            visibleNum = "5D";
+                            break;
+                        case 35:
+                            visibleNum = "5D#";
+                            break;
+                        case 36:
+                            visibleNum = "5E";
+                            break;
+                        case 37:
+                            visibleNum = "5F";
+                            break;
+                        case 38:
+                            visibleNum = "5F#";
+                            break;
+                        case 39:
+                            visibleNum = "5G";
+                            break;
+                        case 40:
+                            visibleNum = "5G#";
+                            break;
+                        case 41:
+                            visibleNum = "5A";
+                            break;
+                        case 42:
+                            visibleNum = "HIGH";
+                            break;
+                    }
+
+                    nowPitch.setText(visibleNum);
 
                     break;
             }
@@ -99,6 +241,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Switch switchButton;
     private Button score;
     private Button standard;
+    private TextView nowPitch;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -145,6 +288,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     isMusicMode = false;
                     score.setVisibility(View.GONE);
                     standard.setVisibility(View.GONE);
+                    nowPitch.setVisibility(View.GONE);
                 }
                 xDataList.clear();
                 yDataList.clear();
@@ -156,6 +300,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
+        nowPitch = (TextView) findViewById(R.id.nowPitch);
+        nowPitch.setOnClickListener(this);
     }
 
     @Override
@@ -171,6 +317,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void initData() {
+        if (timer != null)
+            timer.cancel();
         xDataList.add("00:00");
         xDataList.add("00:00");
         yDataList.add(new Entry(0, ++count));
@@ -276,6 +424,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } else {
                 value = 0;
             }
+            Message message = new Message();
+            message.what = 2;
+            message.arg1 = value;
+            handler.sendMessage(message);
             yDataList.add(new Entry(value, ++count));
         } else {
 
@@ -314,6 +466,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 } else {
                     isBegin = true;
                     bigin.setText("暂停测试");
+                    if (xDataList.size() == 2) {
+                        dateTime = new Date().getTime();
+                    }
                     startRecord();
                 }
                 break;
