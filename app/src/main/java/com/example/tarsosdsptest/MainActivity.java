@@ -2,11 +2,15 @@ package com.example.tarsosdsptest;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -15,6 +19,9 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.tarsosdsptest.common.LeoSpeech;
+import com.example.tarsosdsptest.common.ResultProcessor;
+import com.example.tarsosdsptest.common.SpeechTools;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.google.gson.Gson;
@@ -69,7 +76,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             switch (msg.what) {
                 case 0:
                     if (!isMusicMode)
-                    ChartUtil.showChart(MainActivity.this, lineChart, xDataList, yDataList, "频率图", "频率/时间", "Hz", isMusicMode, false);
+                        ChartUtil.showChart(MainActivity.this, lineChart, xDataList, yDataList, "频率图", "频率/时间", "Hz", isMusicMode, false);
                     break;
                 case 1:
                     timer = new Timer();
@@ -77,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         @Override
                         public void run() {
                             if (isBegin) {
-                                if (!isMusicMode){
+                                if (!isMusicMode) {
 
                                     time_during = (int) (time_min * Math.pow(2, count / 100 - 1));
                                     timerTask.setPeriod(time_during > time_max ? time_max : time_during);
@@ -227,8 +234,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             visibleNum = "HIGH";
                             break;
                     }
-
+                    stringBuffer.append(visibleNum + "|");
+                    dorimi.setText(stringBuffer.toString());
                     nowPitch.setText(visibleNum);
+
+                    break;
+                case 3:
+                    nowPitchWord.setText(msg.obj.toString());
 
                     break;
             }
@@ -242,6 +254,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button score;
     private Button standard;
     private TextView nowPitch;
+    private TextView nowPitchWord;
+    private TextView dorimi;
+    private StringBuffer stringBuffer = new StringBuffer();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -251,6 +266,41 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         isBegin = false;
         isMusicMode = true;
         initView();
+        initRobot();
+    }
+
+
+    private void initRobot() {
+        //设置语音引擎状态更新接口
+//        LeoSpeech.setViewUpdater(this);
+        ResultProcessor mResultProcessor = new ResultProcessor(this);
+        Log.v("wss", "init................");
+        LeoSpeech.init(this, mResultProcessor);
+//        LeoSpeech.setViewUpdater(this);
+        LeoSpeech.makelocalGrammar();
+
+        mResultProcessor.setOnVoiceListener(new ResultProcessor.OnVoiceListener() {
+
+            @Override
+            public void onWords(String words) {
+                Message message = new Message();
+                message.obj = words;
+                message.what = 3;
+                handler.sendMessage(message);
+            }
+
+            @SuppressLint("SetTextI18n")
+            @Override
+            public void onSuccess(int nums) {
+            }
+
+            @Override
+            public void onFail() {
+
+            }
+        });
+
+
     }
 
     private void initView() {
@@ -284,11 +334,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     isMusicMode = true;
                     score.setVisibility(View.VISIBLE);
                     standard.setVisibility(View.VISIBLE);
+                    dorimi.setVisibility(View.VISIBLE);
                 } else {
                     isMusicMode = false;
                     score.setVisibility(View.GONE);
                     standard.setVisibility(View.GONE);
                     nowPitch.setVisibility(View.GONE);
+                    dorimi.setVisibility(View.GONE);
                 }
                 xDataList.clear();
                 yDataList.clear();
@@ -297,11 +349,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 bigin.setText("开始测试");
                 lineChart.clear();
                 initData();
+                dorimi.setText("");
             }
         });
 
         nowPitch = (TextView) findViewById(R.id.nowPitch);
         nowPitch.setOnClickListener(this);
+        nowPitchWord = (TextView) findViewById(R.id.nowPitchWord);
+        nowPitchWord.setOnClickListener(this);
+        dorimi = (TextView) findViewById(R.id.dorimi);
+        dorimi.setOnClickListener(this);
+        dorimi.setMovementMethod(ScrollingMovementMethod.getInstance());
     }
 
     @Override
@@ -480,6 +538,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 bigin.setText("开始测试");
                 lineChart.clear();
                 initData();
+                dorimi.setText("");
                 break;
             case R.id.score:
                 String data = SPUtility.getSPString(MainActivity.this, "listStr");
@@ -513,11 +572,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     else
                         genTimeScore = (int) ((1 / scoreTime[0]) * (1 / scoreTime[0]));
 
-                    final CommonDialog commonDialog = new CommonDialog(this);
-                    commonDialog.setTitle(" 得 分 情 况 : ");
-                    commonDialog.setRightButtonClickListener(new CommonDialog.RightButtonClickListener() {
+//                    final CommonDialog commonDialog = new CommonDialog(this);
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle(" 得 分 情 况 : ");
+                    builder.setPositiveButton("确认", new DialogInterface.OnClickListener() {
                         @Override
-                        public void onRightButtonClick() {
+                        public void onClick(DialogInterface dialog, int which) {
                             xDataList.clear();
                             yDataList.clear();
                             count = 0;
@@ -525,12 +585,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             bigin.setText("开始测试");
                             lineChart.clear();
                             initData();
-                            commonDialog.cancel();
+                            dorimi.setText("");
+                            dialog.dismiss();
                         }
                     });
-//                    commonDialog.setLeftButtonClickListener();
-                    commonDialog.setMessage("系统评分：节奏" + genTimeScore + "分，音准" + genzScore + "分\n明细如下\n节奏误差：" + scoreTime[0] + "，标准唱总帧数为：" + scoreTime[1] + "，您的总帧数为：" + scoreTime[2] + "，音准误差率为：" + scoreFrequency[0] + "，误差个数为：" + scoreFrequency[1]);
-                    commonDialog.show();
+//                    builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+//                        @Override
+//                        public void onClick(DialogInterface dialog, int which) {
+//                            dialog.dismiss();
+//                        }
+//                    });
+                    builder.setMessage("系统评分：节奏" + genTimeScore + "分，音准" + genzScore + "分\n明细如下\n节奏误差：" + scoreTime[0] + "，标准唱总帧数为：" + scoreTime[1] + "，您的总帧数为：" + scoreTime[2] + "，音准误差率为：" + scoreFrequency[0] + "，误差个数为：" + scoreFrequency[1]);
+                    builder.create().show();
+//                    commonDialog.setTitle(" 得 分 情 况 : ");
+//                    commonDialog.setRightButtonClickListener(new CommonDialog.RightButtonClickListener() {
+//                        @Override
+//                        public void onRightButtonClick() {
+//                            xDataList.clear();
+//                            yDataList.clear();
+//                            count = 0;
+//                            isBegin = false;
+//                            bigin.setText("开始测试");
+//                            lineChart.clear();
+//                            initData();
+//                            commonDialog.cancel();
+//                        }
+//                    });
+////                    commonDialog.setLeftButtonClickListener();
+//                    commonDialog.setMessage("系统评分：节奏" + genTimeScore + "分，音准" + genzScore + "分\n明细如下\n节奏误差：" + scoreTime[0] + "，标准唱总帧数为：" + scoreTime[1] + "，您的总帧数为：" + scoreTime[2] + "，音准误差率为：" + scoreFrequency[0] + "，误差个数为：" + scoreFrequency[1]);
+//                    commonDialog.show();
 
 
                 }
@@ -550,6 +633,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void startRecord() {
+        SpeechTools.speakAndRestartRecognize("开始识别");
         AudioDispatcher dispatcher =
                 AudioDispatcherFactory.fromDefaultMicrophone(11025, 1024, 0);
         PitchDetectionHandler pdh = new PitchDetectionHandler() {
@@ -577,15 +661,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void showStyleDialog() {
 
-        final CommonDialog commonDialog = new CommonDialog(this);
-        commonDialog.setTitle("温 馨 提 示 :");
-        commonDialog.setMessage("您确定要上传标准唱吗？");
-        commonDialog.setRightButtonClickListener(new CommonDialog.RightButtonClickListener() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("温 馨 提 示 :");
+        builder.setMessage("您确定要上传标准唱吗？");
+        builder.setPositiveButton("确认", new DialogInterface.OnClickListener() {
             @Override
-            public void onRightButtonClick() {
-//                ChartUtil.showChart(MainActivity.this, lineChart, xDataList, yDataList, "频率图", "频率/时间", "Hz", isMusicMode, true);
-
-//                yStandardDataList.clear();
+            public void onClick(DialogInterface dialog, int which) {
                 yStandardDataList.addAll(yDataList);
                 Gson gson = new Gson();
                 String data = gson.toJson(yStandardDataList);
@@ -598,12 +679,44 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 bigin.setText("开始测试");
                 lineChart.clear();
                 initData();
-                commonDialog.cancel();
-
-
+                dorimi.setText("");
+                dialog.dismiss();
             }
         });
-        commonDialog.show();
+        builder.setNegativeButton("取消", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+            }
+        });
+        builder.create().show();
+//        final CommonDialog commonDialog = new CommonDialog(this);
+//        commonDialog.setTitle("温 馨 提 示 :");
+//        commonDialog.setMessage("您确定要上传标准唱吗？");
+//        commonDialog.setRightButtonClickListener(new CommonDialog.RightButtonClickListener() {
+//            @Override
+//            public void onRightButtonClick() {
+////                ChartUtil.showChart(MainActivity.this, lineChart, xDataList, yDataList, "频率图", "频率/时间", "Hz", isMusicMode, true);
+//
+////                yStandardDataList.clear();
+//                yStandardDataList.addAll(yDataList);
+//                Gson gson = new Gson();
+//                String data = gson.toJson(yStandardDataList);
+//                SPUtility.putSPString(MainActivity.this, "listStr", data);
+//                yStandardDataList.clear();
+//                xDataList.clear();
+//                yDataList.clear();
+//                count = 0;
+//                isBegin = false;
+//                bigin.setText("开始测试");
+//                lineChart.clear();
+//                initData();
+//                commonDialog.cancel();
+//
+//
+//            }
+//        });
+//        commonDialog.show();
     }
 
     public abstract class ReschedulableTimerTask extends TimerTask {

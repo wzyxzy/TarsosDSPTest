@@ -1,0 +1,6 @@
+#BNF+IAT 1.0 UTF-8;
+!grammar zgty;
+!slot <contact>;
+!start <callStart>;
+<callStart>:<contact>;
+<contact>:打|蕤|眯|发|沙|拉|西;

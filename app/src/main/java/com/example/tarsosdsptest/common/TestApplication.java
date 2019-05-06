@@ -15,6 +15,7 @@ import okhttp3.OkHttpClient;
 
 public class TestApplication extends Application {
     private static TestApplication testApplication;
+    public static boolean useLocalRecongnise = true;
 
 
     @Override
