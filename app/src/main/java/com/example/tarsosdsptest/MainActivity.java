@@ -10,7 +10,6 @@ import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.method.ScrollingMovementMethod;
-import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -19,9 +18,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.tarsosdsptest.common.LeoSpeech;
-import com.example.tarsosdsptest.common.ResultProcessor;
-import com.example.tarsosdsptest.common.SpeechTools;
+import com.example.tarsosdsptest.common.TestApplication;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.google.gson.Gson;
@@ -234,13 +231,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             visibleNum = "HIGH";
                             break;
                     }
-                    stringBuffer.append(visibleNum + "|");
-                    dorimi.setText(stringBuffer.toString());
+//                    stringBuffer.append(visibleNum + "|");
+                    dorimi.append(visibleNum + "|");
                     nowPitch.setText(visibleNum);
 
                     break;
                 case 3:
-                    nowPitchWord.setText(msg.obj.toString());
+//                    nowPitchWord.setText(msg.obj.toString());
 
                     break;
             }
@@ -254,9 +251,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button score;
     private Button standard;
     private TextView nowPitch;
-    private TextView nowPitchWord;
+//    private TextView nowPitchWord;
     private TextView dorimi;
-    private StringBuffer stringBuffer = new StringBuffer();
+//    private StringBuffer stringBuffer = new StringBuffer();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -266,42 +263,41 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         isBegin = false;
         isMusicMode = true;
         initView();
-        initRobot();
     }
 
 
-    private void initRobot() {
-        //设置语音引擎状态更新接口
-//        LeoSpeech.setViewUpdater(this);
-        ResultProcessor mResultProcessor = new ResultProcessor(this);
-        Log.v("wss", "init................");
-        LeoSpeech.init(this, mResultProcessor);
-//        LeoSpeech.setViewUpdater(this);
-        LeoSpeech.makelocalGrammar();
-
-        mResultProcessor.setOnVoiceListener(new ResultProcessor.OnVoiceListener() {
-
-            @Override
-            public void onWords(String words) {
-                Message message = new Message();
-                message.obj = words;
-                message.what = 3;
-                handler.sendMessage(message);
-            }
-
-            @SuppressLint("SetTextI18n")
-            @Override
-            public void onSuccess(int nums) {
-            }
-
-            @Override
-            public void onFail() {
-
-            }
-        });
-
-
-    }
+//    private void initRobot() {
+//        //设置语音引擎状态更新接口
+////        LeoSpeech.setViewUpdater(this);
+//        ResultProcessor mResultProcessor = new ResultProcessor(this);
+//        Log.v("wss", "init................");
+//        LeoSpeech.init(this, mResultProcessor);
+////        LeoSpeech.setViewUpdater(this);
+//        LeoSpeech.makelocalGrammar();
+//
+//        mResultProcessor.setOnVoiceListener(new ResultProcessor.OnVoiceListener() {
+//
+//            @Override
+//            public void onWords(String words) {
+//                Message message = new Message();
+//                message.obj = words;
+//                message.what = 3;
+//                handler.sendMessage(message);
+//            }
+//
+//            @SuppressLint("SetTextI18n")
+//            @Override
+//            public void onSuccess(int nums) {
+//            }
+//
+//            @Override
+//            public void onFail() {
+//
+//            }
+//        });
+//
+//
+//    }
 
     private void initView() {
 
@@ -355,8 +351,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         nowPitch = (TextView) findViewById(R.id.nowPitch);
         nowPitch.setOnClickListener(this);
-        nowPitchWord = (TextView) findViewById(R.id.nowPitchWord);
-        nowPitchWord.setOnClickListener(this);
+//        nowPitchWord = (TextView) findViewById(R.id.nowPitchWord);
+//        nowPitchWord.setOnClickListener(this);
         dorimi = (TextView) findViewById(R.id.dorimi);
         dorimi.setOnClickListener(this);
         dorimi.setMovementMethod(ScrollingMovementMethod.getInstance());
@@ -554,7 +550,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     ScoreUtils scoreUtils = new ScoreUtils(yStandardDataList, yDataList);
                     Logger.d(yStandardDataList.toArray());
                     Logger.d(yDataList.toArray());
-                    yStandardDataList.clear();
+//                    yStandardDataList.clear();
                     float[] scoreTime = scoreUtils.scoreTime();
                     float[] scoreFrequency = scoreUtils.scoreFrequency();
 
@@ -572,6 +568,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     else
                         genTimeScore = (int) ((1 / scoreTime[0]) * (1 / scoreTime[0]));
 
+//                    if (scoreFrequency[2]>50){
+//
+//                    }
+                    yStandardDataList.clear();
 //                    final CommonDialog commonDialog = new CommonDialog(this);
                     AlertDialog.Builder builder = new AlertDialog.Builder(this);
                     builder.setTitle(" 得 分 情 况 : ");
@@ -595,7 +595,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                            dialog.dismiss();
 //                        }
 //                    });
-                    builder.setMessage("系统评分：节奏" + genTimeScore + "分，音准" + genzScore + "分\n明细如下\n节奏误差：" + scoreTime[0] + "，标准唱总帧数为：" + scoreTime[1] + "，您的总帧数为：" + scoreTime[2] + "，音准误差率为：" + scoreFrequency[0] + "，误差个数为：" + scoreFrequency[1]);
+                    if (TestApplication.isNotMusic)
+                        builder.setMessage("您好像还没有唱歌哦！");
+                    else
+                        builder.setMessage("系统评分：节奏" + genTimeScore + "分，音准" + genzScore + "分\n明细如下\n节奏误差：" + scoreTime[0] + "，标准唱总帧数为：" + scoreTime[1] + "，您的总帧数为：" + scoreTime[2] + "，音准误差率为：" + scoreFrequency[0] + "，误差个数为：" + scoreFrequency[1] + "，大幅度偏差个数为：" + scoreFrequency[2]);
+
+
                     builder.create().show();
 //                    commonDialog.setTitle(" 得 分 情 况 : ");
 //                    commonDialog.setRightButtonClickListener(new CommonDialog.RightButtonClickListener() {
@@ -633,7 +638,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void startRecord() {
-        SpeechTools.speakAndRestartRecognize("开始识别");
         AudioDispatcher dispatcher =
                 AudioDispatcherFactory.fromDefaultMicrophone(11025, 1024, 0);
         PitchDetectionHandler pdh = new PitchDetectionHandler() {

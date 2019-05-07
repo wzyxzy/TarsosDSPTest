@@ -5,12 +5,15 @@ import com.orhanobut.logger.Logger;
 
 import java.util.List;
 
+import static com.example.tarsosdsptest.common.TestApplication.isNotMusic;
+
 public class ScoreUtils {
 
     private List<Entry> yStandardDataList;
     private List<Entry> yDataList;
     private int[] standardFrame;
     private int[] userFrame;
+    private int gap = 20;
 
     public ScoreUtils(List<Entry> yStandardDataList, List<Entry> yDataList) {
         this.yStandardDataList = yStandardDataList;
@@ -24,15 +27,18 @@ public class ScoreUtils {
     }
 
     public float[] scoreFrequency() {
-
+        isNotMusic = userFrame[0] == userFrame[1];
         float score = 0;
         float highGapCount = 0;
         if (countFrame(standardFrame) > countFrame(userFrame)) {
             for (int i = userFrame[0]; i < userFrame[1]; i++) {
                 try {
                     float everyScore = Math.abs(yDataList.get(i).getVal() - yStandardDataList.get((i - userFrame[0]) * countFrame(standardFrame) / countFrame(userFrame) + standardFrame[0]).getVal());
-                    score += everyScore > 7 ? 0 : everyScore;
+                    score += everyScore > gap ? 0 : everyScore;
+                    highGapCount += everyScore > gap ? 1 : 0;
                 } catch (IndexOutOfBoundsException e) {
+                    Logger.d(i);
+                    Logger.d((i - userFrame[0]) * countFrame(standardFrame) / countFrame(userFrame) + standardFrame[0]);
                     e.printStackTrace();
                 }
 
@@ -42,8 +48,8 @@ public class ScoreUtils {
             for (int i = standardFrame[0]; i < standardFrame[1]; i++) {
                 try {
                     float everyScore = Math.abs(yStandardDataList.get(i).getVal() - yDataList.get((i - standardFrame[0]) * countFrame(userFrame) / countFrame(standardFrame) + userFrame[0]).getVal());
-                    score += everyScore > 7 ? 0 : everyScore;
-                    highGapCount += everyScore > 7 ? 1 : 0;
+                    score += everyScore > gap ? 0 : everyScore;
+                    highGapCount += everyScore > gap ? 1 : 0;
                 } catch (IndexOutOfBoundsException e) {
                     e.printStackTrace();
                 }
