@@ -547,12 +547,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     Toast.makeText(this, "还没有上传标准唱，请先上传！", Toast.LENGTH_SHORT).show();
 //                    yStandardDataList.clear();
                 } else {
-                    ScoreUtils scoreUtils = new ScoreUtils(yStandardDataList, yDataList);
+                    ScoreUtils2 scoreUtils2 = new ScoreUtils2(yStandardDataList, yDataList);
                     Logger.d(yStandardDataList.toArray());
                     Logger.d(yDataList.toArray());
 //                    yStandardDataList.clear();
-                    float[] scoreTime = scoreUtils.scoreTime();
-                    float[] scoreFrequency = scoreUtils.scoreFrequency();
+                    float[] scoreTime = scoreUtils2.scoreTime();
+                    float[] scoreFrequency = scoreUtils2.scoreFrequency2();
 
                     int genTimeScore = 0;
                     int genzScore = (int) Math.sqrt(20 / scoreFrequency[0]);
