@@ -402,7 +402,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 value = 5;
             } else if (pitchInHz < 120) {
                 value = 6;
-                ;
             } else if (pitchInHz < 127) {
                 value = 7;
             } else if (pitchInHz < 135) {
@@ -597,8 +596,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                    });
                     if (TestApplication.isNotMusic)
                         builder.setMessage("您好像还没有唱歌哦！");
-                    else if (scoreFrequency[2] > 1)
-                        builder.setMessage("您的错误率很高，不是同一首歌吧！");
+//                    else if (scoreFrequency[2] > 1)
+//                        builder.setMessage("您的错误率很高，不是同一首歌吧！");
                     else
                         builder.setMessage("系统评分：节奏" + genTimeScore + "分，音准" + genzScore + "分\n明细如下\n节奏误差：" + scoreTime[0] + "，标准唱总帧数为：" + scoreTime[1] + "，您的总帧数为：" + scoreTime[2] + "，音准误差率为：" + scoreFrequency[0] + "，误差个数为：" + scoreFrequency[1] + "，大幅度偏差个数为：" + scoreFrequency[2]);
 
