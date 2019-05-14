@@ -551,7 +551,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     Logger.d(yDataList.toArray());
 //                    yStandardDataList.clear();
                     float[] scoreTime = scoreUtils2.scoreTime();
-                    float[] scoreFrequency = scoreUtils2.scoreFrequency2();
+                    float[] scoreFrequency = scoreUtils2.scoreFrequency();
 
                     int genTimeScore = 0;
                     int genzScore = (int) Math.sqrt(20 / scoreFrequency[0]);
@@ -596,7 +596,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                    });
                     if (TestApplication.isNotMusic)
                         builder.setMessage("您好像还没有唱歌哦！");
-//                    else if (scoreFrequency[2] > 1)
+//                    else if (scoreFrequency[2] > 0.5)
 //                        builder.setMessage("您的错误率很高，不是同一首歌吧！");
                     else
                         builder.setMessage("系统评分：节奏" + genTimeScore + "分，音准" + genzScore + "分\n明细如下\n节奏误差：" + scoreTime[0] + "，标准唱总帧数为：" + scoreTime[1] + "，您的总帧数为：" + scoreTime[2] + "，音准误差率为：" + scoreFrequency[0] + "，误差个数为：" + scoreFrequency[1] + "，大幅度偏差个数为：" + scoreFrequency[2]);
