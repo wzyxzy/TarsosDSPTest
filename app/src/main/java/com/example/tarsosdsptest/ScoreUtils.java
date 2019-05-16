@@ -13,7 +13,7 @@ public class ScoreUtils {
     private List<Entry> yDataList;
     private int[] standardFrame;
     private int[] userFrame;
-    private int gap = 12;
+    private int gap = 8;
 
     public ScoreUtils(List<Entry> yStandardDataList, List<Entry> yDataList) {
         this.yStandardDataList = yStandardDataList;

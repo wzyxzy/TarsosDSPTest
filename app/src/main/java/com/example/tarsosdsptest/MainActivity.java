@@ -3,10 +3,14 @@ package com.example.tarsosdsptest;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.DialogInterface;
+import android.media.AudioManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
+import android.support.annotation.RequiresApi;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.method.ScrollingMovementMethod;
@@ -25,6 +29,7 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.orhanobut.logger.Logger;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.text.DateFormat;
@@ -39,16 +44,20 @@ import java.util.TimerTask;
 import be.tarsos.dsp.AudioDispatcher;
 import be.tarsos.dsp.AudioEvent;
 import be.tarsos.dsp.AudioProcessor;
+import be.tarsos.dsp.io.android.AndroidAudioPlayer;
+import be.tarsos.dsp.io.android.AndroidFFMPEGLocator;
 import be.tarsos.dsp.io.android.AudioDispatcherFactory;
 import be.tarsos.dsp.pitch.PitchDetectionHandler;
 import be.tarsos.dsp.pitch.PitchDetectionResult;
 import be.tarsos.dsp.pitch.PitchProcessor;
 
+@RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private LineChart lineChart;
     private String[] myPermissions = new String[]{
-            Manifest.permission.RECORD_AUDIO
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.READ_EXTERNAL_STORAGE
     };
 
     List<String> xDataList = new ArrayList<>();// x轴数据源
@@ -523,6 +532,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         dateTime = new Date().getTime();
                     }
                     startRecord();
+//                    testFromFile();
                 }
                 break;
             case R.id.clear:
@@ -554,7 +564,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     float[] scoreFrequency = scoreUtils2.scoreFrequency();
 
                     int genTimeScore = 0;
-                    int genzScore = (int) Math.sqrt(20 / scoreFrequency[0]);
+                    int genzScore = (int) (5 / (scoreFrequency[0] + scoreFrequency[2] / scoreTime[2]));
+//                    int genzScore = (int) Math.sqrt(20 / scoreFrequency[0]);
                     genzScore = genzScore > 10 ? 10 : genzScore;
                     if (scoreTime[0] < 0.01)
                         genTimeScore = 10;
@@ -596,8 +607,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                    });
                     if (TestApplication.isNotMusic)
                         builder.setMessage("您好像还没有唱歌哦！");
-//                    else if (scoreFrequency[2] > 0.5)
-//                        builder.setMessage("您的错误率很高，不是同一首歌吧！");
+                    else if (scoreFrequency[2] / scoreTime[2] > 0.5)
+                        builder.setMessage("您的错误率很高，不是同一首歌吧！");
                     else
                         builder.setMessage("系统评分：节奏" + genTimeScore + "分，音准" + genzScore + "分\n明细如下\n节奏误差：" + scoreTime[0] + "，标准唱总帧数为：" + scoreTime[1] + "，您的总帧数为：" + scoreTime[2] + "，音准误差率为：" + scoreFrequency[0] + "，误差个数为：" + scoreFrequency[1] + "，大幅度偏差个数为：" + scoreFrequency[2]);
 
@@ -640,7 +651,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void startRecord() {
         AudioDispatcher dispatcher =
-                AudioDispatcherFactory.fromDefaultMicrophone(11025, 1024, 0);
+                AudioDispatcherFactory.fromDefaultMicrophone(44100, 10000, 5000);
         PitchDetectionHandler pdh = new PitchDetectionHandler() {
             @Override
             public void handlePitch(PitchDetectionResult res, AudioEvent e) {
@@ -656,11 +667,51 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 });
             }
         };
-        AudioProcessor pitchProcessor = new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.FFT_YIN, 11025, 1024, pdh);
+        AudioProcessor pitchProcessor = new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.FFT_YIN, 44100, 10000, pdh);
         dispatcher.addAudioProcessor(pitchProcessor);
         audioThread = new Thread(dispatcher, "Audio Thread");
         audioThread.start();
         handler.sendEmptyMessage(1);
+
+    }
+
+    private void testFromFile() {
+        PitchDetectionHandler pdh = new PitchDetectionHandler() {
+            @Override
+            public void handlePitch(PitchDetectionResult res, AudioEvent e) {
+                final float pitchInHz = res.getPitch();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (isBegin) {
+                            processPitch(pitchInHz);
+                        }
+
+                    }
+                });
+            }
+        };
+        new AndroidFFMPEGLocator(MainActivity.this);
+
+        final AudioDispatcher[] adp = new AudioDispatcher[1];
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                File externalStorage = Environment.getExternalStorageDirectory();
+//                File mp3 = new File(externalStorage.getAbsolutePath() , "/c.mp3");
+                File mp3 = new File(externalStorage.getAbsolutePath(), "/aaaaaa/t8r9.m4a");
+                adp[0] = AudioDispatcherFactory.fromPipe(mp3.getAbsolutePath(), 44100, 10000, 5000);
+//                adp[0].addAudioProcessor(new AndroidAudioPlayer(adp[0].getFormat(),5000, AudioManager.STREAM_MUSIC));
+//                adp[0].run();
+                AudioProcessor pitchProcessor = new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.FFT_YIN, 44100, 10000, pdh);
+                adp[0].addAudioProcessor(pitchProcessor);
+                audioThread = new Thread(adp[0], "Audio Thread");
+                audioThread.start();
+                handler.sendEmptyMessage(1);
+
+            }
+        }).start();
+
 
     }
 

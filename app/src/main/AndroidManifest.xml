@@ -4,6 +4,8 @@
     package="com.example.tarsosdsptest">
 
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
     <application
         android:name=".common.TestApplication"
         android:allowBackup="true"
