@@ -699,7 +699,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void run() {
                 File externalStorage = Environment.getExternalStorageDirectory();
 //                File mp3 = new File(externalStorage.getAbsolutePath() , "/c.mp3");
-                File mp3 = new File(externalStorage.getAbsolutePath(), "/aaaaaa/t8r9.m4a");
+                File mp3 = new File(externalStorage.getAbsolutePath(), "/雪绒花-00.mp3");
                 adp[0] = AudioDispatcherFactory.fromPipe(mp3.getAbsolutePath(), 44100, 10000, 5000);
 //                adp[0].addAudioProcessor(new AndroidAudioPlayer(adp[0].getFormat(),5000, AudioManager.STREAM_MUSIC));
 //                adp[0].run();
@@ -726,6 +726,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 yStandardDataList.addAll(yDataList);
                 Gson gson = new Gson();
                 String data = gson.toJson(yStandardDataList);
+                Logger.d(data);
                 SPUtility.putSPString(MainActivity.this, "listStr", data);
                 yStandardDataList.clear();
                 xDataList.clear();
