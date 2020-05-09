@@ -3,7 +3,11 @@ package com.example.tarsosdsptest;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.media.AudioFormat;
 import android.media.AudioManager;
+import android.media.AudioTrack;
+import android.media.MediaPlayer;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -14,6 +18,7 @@ import android.support.annotation.RequiresApi;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -30,6 +35,9 @@ import com.google.gson.reflect.TypeToken;
 import com.orhanobut.logger.Logger;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.text.DateFormat;
@@ -44,12 +52,13 @@ import java.util.TimerTask;
 import be.tarsos.dsp.AudioDispatcher;
 import be.tarsos.dsp.AudioEvent;
 import be.tarsos.dsp.AudioProcessor;
-import be.tarsos.dsp.io.android.AndroidAudioPlayer;
 import be.tarsos.dsp.io.android.AndroidFFMPEGLocator;
 import be.tarsos.dsp.io.android.AudioDispatcherFactory;
 import be.tarsos.dsp.pitch.PitchDetectionHandler;
 import be.tarsos.dsp.pitch.PitchDetectionResult;
 import be.tarsos.dsp.pitch.PitchProcessor;
+
+import static android.media.AudioTrack.WRITE_NON_BLOCKING;
 
 @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
@@ -72,7 +81,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private int time_during = 0;
     private int time_max = 1000;
     private int time_min = 100;
-
+    private AudioDispatcher dispatcher;
+    private List<AudioOut> byteBuffer;
+    private byte[] allBytes;
+    private AudioTrack audioTrack;
 
     @SuppressLint("HandlerLeak")
     private Handler handler = new Handler() {
@@ -243,10 +255,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //                    stringBuffer.append(visibleNum + "|");
                     dorimi.append(visibleNum + "|");
                     nowPitch.setText(visibleNum);
+                    nowPitchWord.setText(String.valueOf(count));
 
                     break;
                 case 3:
-//                    nowPitchWord.setText(msg.obj.toString());
+
 
                     break;
             }
@@ -260,8 +273,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button score;
     private Button standard;
     private TextView nowPitch;
-    //    private TextView nowPitchWord;
+    private TextView nowPitchWord;
     private TextView dorimi;
+    private Button playSound;
+    private Button gotoTest;
 //    private StringBuffer stringBuffer = new StringBuffer();
 
     @Override
@@ -272,6 +287,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         isBegin = false;
         isMusicMode = true;
         initView();
+
+//        audioTrack = new AudioTrack(streamType, sampleRate, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, bufferSizeInBytes,AudioTrack.MODE_STREAM);
+
     }
 
 
@@ -360,17 +378,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         nowPitch = (TextView) findViewById(R.id.nowPitch);
         nowPitch.setOnClickListener(this);
-//        nowPitchWord = (TextView) findViewById(R.id.nowPitchWord);
-//        nowPitchWord.setOnClickListener(this);
+        nowPitchWord = (TextView) findViewById(R.id.nowPitchWord);
+        nowPitchWord.setOnClickListener(this);
         dorimi = (TextView) findViewById(R.id.dorimi);
         dorimi.setOnClickListener(this);
         dorimi.setMovementMethod(ScrollingMovementMethod.getInstance());
+        playSound = (Button) findViewById(R.id.playSound);
+        playSound.setOnClickListener(this);
+        gotoTest = (Button) findViewById(R.id.gotoTest);
+        gotoTest.setOnClickListener(this);
+        byteBuffer = new ArrayList<>();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);//软件在后台屏幕不需要常亮
+        if (audioTrack != null) {
+            audioTrack.flush();
+            audioTrack.stop();
+            audioTrack.release();
+        }
     }
 
     @Override
@@ -380,6 +408,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void initData() {
+
         if (timer != null)
             timer.cancel();
         xDataList.add("00:00");
@@ -388,12 +417,38 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         yDataList.add(new Entry(0, ++count));
         endAndChart();
         dateTime = new Date().getTime();
+
+        if (audioTrack == null) {
+            int bufferSize = AudioTrack.getMinBufferSize(44100, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT);
+            audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
+                    44100, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT, bufferSize, AudioTrack.MODE_STREAM);
+            audioTrack.play();
+        }
+
+//        if (audioThread != null)
+//            audioThread.interrupt();
+//        if (runnable != null){
+//            ExecutorService threadPoolExecutor = Executors.newSingleThreadExecutor();
+//
+//// submit task to threadpool:
+//            Future longRunningTaskFuture = threadPoolExecutor.submit(runnable);
+//
+////... ...
+//// At some point in the future, if you want to kill the task:
+//            longRunningTaskFuture.cancel(true);
+//        }
+        if (dispatcher == null)
+            return;
+        if (!dispatcher.isStopped())
+            dispatcher.stop();
     }
+
 
     private void processPitch(final float pitchInHz) {
         DateFormat df = new SimpleDateFormat("mm:ss");
         String format = df.format(new Date().getTime() - dateTime);
         xDataList.add(format);
+
         if (isMusicMode) {
 //            yAxis.setDrawGridLines(true);
             int value = 0;
@@ -496,6 +551,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             yDataList.add(new Entry(pitchInHz, ++count));
 
         }
+
+//        if (format.equalsIgnoreCase("00:10"))
+//            Toast.makeText(this, count + "", Toast.LENGTH_SHORT).show();
 //        handler.sendEmptyMessage(1);
     }
 
@@ -518,6 +576,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
@@ -525,6 +584,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if (isBegin) {
                     isBegin = false;
                     bigin.setText("开始测试");
+                    if (dispatcher == null)
+                        return;
+                    if (!dispatcher.isStopped())
+                        dispatcher.stop();
                 } else {
                     isBegin = true;
                     bigin.setText("暂停测试");
@@ -640,31 +703,119 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.standard:
                 showStyleDialog();
                 break;
+            case R.id.playSound:
+                if (isBegin) {
+                    Toast.makeText(this, "正在录制，不能播放", Toast.LENGTH_SHORT).show();
+                } else {
+//                    playMp3(byteBuffer);
+//                    for (AudioEvent audioEvent : byteBuffer) {
+//                        int overlapInSamples = audioEvent.getOverlap();
+//                        int stepSizeInSamples = audioEvent.getBufferSize() - overlapInSamples;
+//                        byte[] byteBuffer = audioEvent.getByteBuffer();
+//
+////                        int ret = audioTrack.write(audioEvent.getFloatBuffer(),overlapInSamples,stepSizeInSamples, WRITE_NON_BLOCKING);
+//                        audioTrack.write(byteBuffer, overlapInSamples * 2, stepSizeInSamples * 2);
+////                        playMp3(byteBuffer);
+//                        try {
+//                            Thread.sleep(500);
+//                        } catch (InterruptedException e) {
+//                            e.printStackTrace();
+//                        }
+//
+//                    }
+//                    for (AudioOut audioOut : byteBuffer) {
+//                        int overlapInSamples = audioOut.getOverlap();
+//                        int stepSizeInSamples = audioOut.getBytesProcessing() - overlapInSamples;
+//                        byte[] byteBuffer = audioOut.getByteBuffer();
+                    audioTrack.write(allBytes, 0, allBytes.length);
+//                        Logger.d(audioOut.toString());
+//                    }
+
+//                    for (int i = 0; i < byteBuffer.size(); i++) {
+//                        int overlapInSamples = byteBuffer.get(i).getOverlap();
+//                        int stepSizeInSamples = byteBuffer.get(i).getBufferSize() - overlapInSamples;
+//                        audioTrack.write(byteBuffer.get(i).getByteBuffer(), overlapInSamples * 2, stepSizeInSamples * 2);
+//                        Logger.d(byteBuffer.get(i).getByteBuffer());
+//                    }
+                }
+                break;
+            case R.id.gotoTest:
+                startActivity(new Intent(this, WebTest.class));
+                break;
         }
     }
 
     Thread audioThread;
+
+    private void playMp3(byte[] mp3SoundByteArray) {
+        try {
+            // create temp file that will hold byte array
+            File tempMp3 = File.createTempFile("yingaoshibie", ".mp3", getCacheDir());
+            tempMp3.deleteOnExit();
+            FileOutputStream fos = new FileOutputStream(tempMp3);
+            fos.write(mp3SoundByteArray);
+            fos.close();
+
+            // Tried reusing instance of media player
+            // but that resulted in system crashes...
+            MediaPlayer mediaPlayer = new MediaPlayer();
+
+            // Tried passing path directly, but kept getting
+            // "Prepare failed.: status=0x1"
+            // so using file descriptor instead
+            FileInputStream fis = new FileInputStream(tempMp3);
+            mediaPlayer.setDataSource(fis.getFD());
+
+            mediaPlayer.prepare();
+            mediaPlayer.start();
+        } catch (IOException ex) {
+            String s = ex.toString();
+            ex.printStackTrace();
+        }
+    }
+
 
     private void endAndChart() {
         handler.sendEmptyMessage(0);
     }
 
     private void startRecord() {
-        AudioDispatcher dispatcher =
+
+        dispatcher =
                 AudioDispatcherFactory.fromDefaultMicrophone(44100, 10000, 5000);
         PitchDetectionHandler pdh = new PitchDetectionHandler() {
             @Override
-            public void handlePitch(PitchDetectionResult res, AudioEvent e) {
-                final float pitchInHz = res.getPitch();
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (isBegin) {
-                            processPitch(pitchInHz);
-                        }
+            public void handlePitch(PitchDetectionResult res, AudioEvent audioEvent) {
+//                final float pitchInHz = ;
+//                runnable = new Runnable() {
+//                    @Override
+//                    public void run() {
+//
+//
+//                    }
+//                };
+//                runOnUiThread(runnable);
+                if (isBegin) {
+                    processPitch(res.getPitch());
+//                            int overlapInSamples = audioEvent.getOverlap();
+//                            int stepSizeInSamples = audioEvent.getBufferSize() - overlapInSamples;
 
-                    }
-                });
+//                    byteBuffer.add(new AudioOut(audioEvent.getByteBuffer(), audioEvent.getOverlap(), audioEvent.getBufferSize()));
+//                    Logger.d(audioEvent.getByteBuffer());
+//                    Logger.d(audioEvent.getOverlap());
+//                    Logger.d(audioEvent.getBufferSize());
+//                    if (allBytes == null) {
+//                        allBytes = audioEvent.getByteBuffer();
+//                    } else {
+//                        allBytes = byteMerger(allBytes, audioEvent.getByteBuffer());
+//                    }
+//                    Logger.d(audioEvent.getByteBuffer());
+//                    int ret = audioTrack.write(audioEvent.getFloatBuffer(),overlapInSamples,stepSizeInSamples,AudioTrack.WRITE_BLOCKING);
+//                            int ret =
+//                            if (ret < 0) {
+//                                Log.e("audioEvent", "AudioTrack.write returned error code " + ret);
+//                            }
+                }
             }
         };
         AudioProcessor pitchProcessor = new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.FFT_YIN, 44100, 10000, pdh);
@@ -673,6 +824,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         audioThread.start();
         handler.sendEmptyMessage(1);
 
+    }
+
+    private static byte[] byteMerger(byte[] bt1, byte[] bt2) {
+        byte[] bt3 = new byte[bt1.length + bt2.length - 128];
+        System.arraycopy(bt1, 64, bt3, 0, bt1.length-64);
+        System.arraycopy(bt2, 64, bt3, bt1.length-64, bt2.length - 64);
+        return bt3;
     }
 
     private void testFromFile() {
@@ -699,7 +857,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void run() {
                 File externalStorage = Environment.getExternalStorageDirectory();
 //                File mp3 = new File(externalStorage.getAbsolutePath() , "/c.mp3");
-                File mp3 = new File(externalStorage.getAbsolutePath(), "/雪绒花-00.mp3");
+                File mp3 = new File(externalStorage.getAbsolutePath(), "/00.mp3");
                 adp[0] = AudioDispatcherFactory.fromPipe(mp3.getAbsolutePath(), 44100, 10000, 5000);
 //                adp[0].addAudioProcessor(new AndroidAudioPlayer(adp[0].getFormat(),5000, AudioManager.STREAM_MUSIC));
 //                adp[0].run();
